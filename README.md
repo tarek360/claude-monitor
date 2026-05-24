@@ -2,7 +2,7 @@
 
 A macOS menu bar app that shows your [Claude Code](https://claude.ai/code) rate-limit usage at a glance.
 
-![Claude Monitor popover showing current and weekly usage bars](assets/claudecode.png)
+<img src="assets/claudecode.png" alt="Claude Monitor popover showing current and weekly usage bars" width="100" />
 
 ---
 
