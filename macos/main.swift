@@ -43,7 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Panel setup
 
-    private static let githubURL = URL(string: "https://github.com/tarek/claude-monitor")!
+    private static let githubURL = URL(string: "https://github.com/tarek360/claude-monitor")!
 
     func buildPanel() {
         let content = PopoverView(
