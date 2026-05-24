@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 import Network
 import SwiftUI
@@ -19,6 +20,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: StatusPanel?
     private var hostingView: NSHostingView<PopoverView>?
     private var eventMonitor: Any?
+    private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = nil  // track system light/dark mode
@@ -31,14 +33,55 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Status Item
 
     func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         guard let btn = statusItem.button else { return }
-        let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: "Claude Monitor")
-        img?.isTemplate = true
-        btn.image = img
+        btn.title = "—"
         btn.action = #selector(statusItemClicked)
         btn.target = self
         btn.sendAction(on: [.leftMouseDown, .rightMouseDown])
+
+        model.$hasData
+            .combineLatest(model.$fiveHourPct, model.$sevenDayPct)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] hasData, fivePct, sevenPct in
+                self?.updateStatusBarButton(hasData: hasData, fivePct: fivePct, sevenPct: sevenPct)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateStatusBarButton(hasData: Bool, fivePct: Double, sevenPct: Double) {
+        guard let btn = statusItem.button else { return }
+        let font = NSFont.systemFont(ofSize: 12)
+        let string = NSMutableAttributedString()
+
+        func attach(_ image: NSImage, size: CGFloat) -> NSAttributedString {
+            let copy = (image.copy() as? NSImage) ?? image
+            copy.isTemplate = true
+            let a = NSTextAttachment()
+            a.image = copy
+            a.bounds = CGRect(x: 0, y: floor((font.capHeight - size) / 2), width: size, height: size)
+            return NSAttributedString(attachment: a)
+        }
+
+        if let logo = NSImage(named: "claudecode") {
+            string.append(attach(logo, size: 14))
+            string.append(NSAttributedString(string: " ", attributes: [.font: font]))
+        }
+
+        if hasData {
+            if let icon = NSImage(systemSymbolName: "timer", accessibilityDescription: nil) {
+                string.append(attach(icon, size: 11))
+            }
+            string.append(NSAttributedString(string: " \(Int(fivePct.rounded()))%  ·  ", attributes: [.font: font]))
+            if let icon = NSImage(systemSymbolName: "calendar", accessibilityDescription: nil) {
+                string.append(attach(icon, size: 11))
+            }
+            string.append(NSAttributedString(string: " \(Int(sevenPct.rounded()))%", attributes: [.font: font]))
+        } else {
+            string.append(NSAttributedString(string: "—", attributes: [.font: font]))
+        }
+
+        btn.attributedTitle = string
     }
 
     // MARK: - Panel setup
