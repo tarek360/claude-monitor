@@ -69,7 +69,12 @@ bash build.sh
 
 This produces `dist/ClaudeMonitor.app`. Drag it to `/Applications` or run it directly.
 
-> **First launch on macOS:** The app is ad-hoc signed but not notarized, so macOS will show an "unidentified developer" warning. Right-click (or Control-click) the app and choose **Open** to bypass it — you only need to do this once.
+> **First launch on macOS:** The app is ad-hoc signed but not notarized, so Gatekeeper will block it with a security warning. To open it:
+> 1. **Right-click** (or Control-click) the `.app` → choose **Open** → click **Open** in the confirmation dialog.
+>
+> Alternatively: after dismissing the warning, go to **System Settings → Privacy & Security**, scroll down to *"ClaudeMonitor was blocked"*, and click **Open Anyway**.
+>
+> You only need to do this once.
 
 ---
 
