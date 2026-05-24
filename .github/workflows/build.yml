@@ -21,6 +21,9 @@ jobs:
       - name: Build .app bundle
         run: bash build.sh
 
+      - name: Ad-hoc code sign
+        run: codesign --force --deep --sign - dist/ClaudeMonitor.app
+
       - name: Package app
         run: ditto -c -k --keepParent dist/ClaudeMonitor.app dist/ClaudeMonitor.zip
 

@@ -69,10 +69,7 @@ bash build.sh
 
 This produces `dist/ClaudeMonitor.app`. Drag it to `/Applications` or run it directly.
 
-> **First launch on macOS:** macOS may block the app because it isn't notarized. Run once to clear the quarantine flag:
-> ```bash
-> xattr -cr dist/ClaudeMonitor.app
-> ```
+> **First launch on macOS:** The app is ad-hoc signed but not notarized, so macOS will show an "unidentified developer" warning. Right-click (or Control-click) the app and choose **Open** to bypass it — you only need to do this once.
 
 ---
 
