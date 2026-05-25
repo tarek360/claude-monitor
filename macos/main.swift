@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 import Network
 import SwiftUI
@@ -19,6 +20,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: StatusPanel?
     private var hostingView: NSHostingView<PopoverView>?
     private var eventMonitor: Any?
+    private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = nil  // track system light/dark mode
@@ -31,14 +33,66 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Status Item
 
     func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         guard let btn = statusItem.button else { return }
-        let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: "Claude Monitor")
-        img?.isTemplate = true
-        btn.image = img
+        btn.title = "—"
         btn.action = #selector(statusItemClicked)
         btn.target = self
         btn.sendAction(on: [.leftMouseDown, .rightMouseDown])
+
+        model.$hasData
+            .combineLatest(model.$fiveHourPct, model.$sevenDayPct)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] hasData, fivePct, sevenPct in
+                self?.updateStatusBarButton(hasData: hasData, fivePct: fivePct, sevenPct: sevenPct)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateStatusBarButton(hasData: Bool, fivePct: Double, sevenPct: Double) {
+        guard let btn = statusItem.button else { return }
+
+        let sText = hasData ? "S \(Int(fivePct.rounded()))%" : "S --%"
+        let wText = hasData ? "W \(Int(sevenPct.rounded()))%" : "W --%"
+
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .regular)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+
+        let sSize = (sText as NSString).size(withAttributes: attrs)
+        let wSize = (wText as NSString).size(withAttributes: attrs)
+        let textW = ceil(max(sSize.width, wSize.width))
+
+        let logoSize: CGFloat = 16
+        let gap: CGFloat = 3
+        let barH: CGFloat = 22
+
+        let svgURL = Bundle.main.url(forResource: "claudecode", withExtension: "svg")
+        let xOffset: CGFloat = svgURL != nil ? logoSize + gap : 0
+        let totalW = ceil(xOffset + textW)
+
+        let halfH = barH / 2
+        // "at:" uses the text baseline in non-flipped coords (origin bottom-left, y increases up).
+        // Subtract the visual midpoint so each line is centered within its half.
+        let mid = (font.ascender + font.descender) / 2
+        let sY = (halfH + barH) / 2 - mid   // baseline for S, centered in top half
+        let wY = halfH / 2 - mid             // baseline for W, centered in bottom half
+
+        let image = NSImage(size: NSSize(width: totalW, height: barH), flipped: false) { _ in
+            if let url = svgURL,
+               let logo = NSImage(contentsOf: url) {
+                let copy = (logo.copy() as? NSImage) ?? logo
+                copy.isTemplate = true
+                copy.draw(in: NSRect(x: 0, y: (barH - logoSize) / 2, width: logoSize, height: logoSize))
+            }
+            (sText as NSString).draw(at: NSPoint(x: xOffset, y: sY), withAttributes: attrs)
+            (wText as NSString).draw(at: NSPoint(x: xOffset, y: wY), withAttributes: attrs)
+            return true
+        }
+        image.isTemplate = true
+
+        btn.image = image
+        btn.imagePosition = .imageOnly
+        btn.title = ""
     }
 
     // MARK: - Panel setup
@@ -133,8 +187,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func showControlMenu() {
         let menu = NSMenu()
 
-        let githubItem = NSMenuItem(title: "View on GitHub", action: #selector(openGitHub), keyEquivalent: "")
-        githubItem.image = menuIcon("arrow.up.right.square")
+        let githubItem = NSMenuItem(title: "Report an Issue", action: #selector(openGitHub), keyEquivalent: "")
+        githubItem.image = githubIcon()
         githubItem.target = self
         menu.addItem(githubItem)
 
@@ -156,6 +210,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func menuIcon(_ name: String) -> NSImage? {
         let img = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+        img?.isTemplate = true
+        return img
+    }
+
+    func githubIcon() -> NSImage? {
+        let img = NSImage(named: "github")
+        img?.size = NSSize(width: 16, height: 16)
         img?.isTemplate = true
         return img
     }

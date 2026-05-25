@@ -66,7 +66,7 @@ private struct UsageCard: View {
             }
             .frame(height: 8)
 
-            Text(resetLabel)
+            resetLabel
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
         }
@@ -81,27 +81,25 @@ private struct UsageCard: View {
         return Color(hue: hue, saturation: 0.85, brightness: 0.95)
     }
 
-    private var resetLabel: String {
+    private var resetLabel: Text {
         let timeFmt = DateFormatter()
         timeFmt.dateFormat = "h:mma"   // e.g. "5:00PM"
 
         switch resetStyle {
         case .hourly:
-            // "resets 5:00pm (2h 50m)"
             let timeStr = timeFmt.string(from: resetsAt).lowercased()
             let secs  = Int(max(resetsAt.timeIntervalSinceNow, 0))
             let hours = secs / 3600
             let mins  = (secs % 3600) / 60
             let rel   = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
-            return "resets \(timeStr) (\(rel))"
+            return Text("Resets at ") + Text("\(timeStr) (\(rel))").bold()
 
         case .weekly:
-            // "Tue, 6:00am"
             let dayFmt = DateFormatter()
             dayFmt.dateFormat = "EEE"
             let day  = dayFmt.string(from: resetsAt)
             let time = timeFmt.string(from: resetsAt).lowercased()
-            return "\(day), \(time)"
+            return Text("Resets on ") + Text("\(day), \(time)").bold()
         }
     }
 }
@@ -110,12 +108,16 @@ private struct UsageCard: View {
 
 private struct MenuItemRow: View {
     let title: String
+    var iconName: String? = nil
+    var systemIcon: String? = nil
     let action: () -> Void
     @State private var isHovered = false
 
     var body: some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: 8) {
+                icon
+                    .frame(width: 16, height: 16)
                 Text(title)
                     .font(.system(size: 13))
                 Spacer()
@@ -128,6 +130,20 @@ private struct MenuItemRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        if let iconName, let img = NSImage(named: iconName) {
+            Image(nsImage: img)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+        } else if let systemIcon {
+            Image(systemName: systemIcon)
+        } else {
+            Color.clear
+        }
     }
 }
 
@@ -170,8 +186,8 @@ struct PopoverView: View {
 
             // Controls
             VStack(spacing: 2) {
-                MenuItemRow(title: "View on GitHub", action: onGitHub)
-                MenuItemRow(title: "Quit",           action: onQuit)
+                MenuItemRow(title: "Report an Issue", iconName: "github", action: onGitHub)
+                MenuItemRow(title: "Quit", systemIcon: "power", action: onQuit)
             }
         }
         .padding(16)
