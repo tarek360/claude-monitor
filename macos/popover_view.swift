@@ -66,7 +66,7 @@ private struct UsageCard: View {
             }
             .frame(height: 8)
 
-            Text(resetLabel)
+            resetLabel
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
         }
@@ -81,27 +81,25 @@ private struct UsageCard: View {
         return Color(hue: hue, saturation: 0.85, brightness: 0.95)
     }
 
-    private var resetLabel: String {
+    private var resetLabel: Text {
         let timeFmt = DateFormatter()
         timeFmt.dateFormat = "h:mma"   // e.g. "5:00PM"
 
         switch resetStyle {
         case .hourly:
-            // "resets 5:00pm (2h 50m)"
             let timeStr = timeFmt.string(from: resetsAt).lowercased()
             let secs  = Int(max(resetsAt.timeIntervalSinceNow, 0))
             let hours = secs / 3600
             let mins  = (secs % 3600) / 60
             let rel   = hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
-            return "resets \(timeStr) (\(rel))"
+            return Text("Resets at ") + Text("\(timeStr) (\(rel))").bold()
 
         case .weekly:
-            // "Tue, 6:00am"
             let dayFmt = DateFormatter()
             dayFmt.dateFormat = "EEE"
             let day  = dayFmt.string(from: resetsAt)
             let time = timeFmt.string(from: resetsAt).lowercased()
-            return "\(day), \(time)"
+            return Text("Resets on ") + Text("\(day), \(time)").bold()
         }
     }
 }

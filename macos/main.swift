@@ -51,31 +51,48 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusBarButton(hasData: Bool, fivePct: Double, sevenPct: Double) {
         guard let btn = statusItem.button else { return }
-        let font = NSFont.systemFont(ofSize: 12)
-        let string = NSMutableAttributedString()
 
-        func attach(_ image: NSImage, size: CGFloat) -> NSAttributedString {
-            let copy = (image.copy() as? NSImage) ?? image
-            copy.isTemplate = true
-            let a = NSTextAttachment()
-            a.image = copy
-            a.bounds = CGRect(x: 0, y: floor((font.capHeight - size) / 2), width: size, height: size)
-            return NSAttributedString(attachment: a)
+        let sText = hasData ? "S \(Int(fivePct.rounded()))%" : "S --%"
+        let wText = hasData ? "W \(Int(sevenPct.rounded()))%" : "W --%"
+
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .regular)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+
+        let sSize = (sText as NSString).size(withAttributes: attrs)
+        let wSize = (wText as NSString).size(withAttributes: attrs)
+        let textW = ceil(max(sSize.width, wSize.width))
+
+        let logoSize: CGFloat = 16
+        let gap: CGFloat = 3
+        let barH: CGFloat = 22
+
+        let svgURL = Bundle.main.url(forResource: "claudecode", withExtension: "svg")
+        let xOffset: CGFloat = svgURL != nil ? logoSize + gap : 0
+        let totalW = ceil(xOffset + textW)
+
+        let halfH = barH / 2
+        // "at:" uses the text baseline in non-flipped coords (origin bottom-left, y increases up).
+        // Subtract the visual midpoint so each line is centered within its half.
+        let mid = (font.ascender + font.descender) / 2
+        let sY = (halfH + barH) / 2 - mid   // baseline for S, centered in top half
+        let wY = halfH / 2 - mid             // baseline for W, centered in bottom half
+
+        let image = NSImage(size: NSSize(width: totalW, height: barH), flipped: false) { _ in
+            if let url = svgURL,
+               let logo = NSImage(contentsOf: url) {
+                let copy = (logo.copy() as? NSImage) ?? logo
+                copy.isTemplate = true
+                copy.draw(in: NSRect(x: 0, y: (barH - logoSize) / 2, width: logoSize, height: logoSize))
+            }
+            (sText as NSString).draw(at: NSPoint(x: xOffset, y: sY), withAttributes: attrs)
+            (wText as NSString).draw(at: NSPoint(x: xOffset, y: wY), withAttributes: attrs)
+            return true
         }
+        image.isTemplate = true
 
-        if let svgURL = Bundle.main.url(forResource: "claudecode", withExtension: "svg"),
-           let logo = NSImage(contentsOf: svgURL) {
-            string.append(attach(logo, size: 14))
-            string.append(NSAttributedString(string: " ", attributes: [.font: font]))
-        }
-
-        if hasData {
-            string.append(NSAttributedString(string: "S \(Int(fivePct.rounded()))%  W \(Int(sevenPct.rounded()))%", attributes: [.font: font]))
-        } else {
-            string.append(NSAttributedString(string: "S --% W --%", attributes: [.font: font]))
-        }
-
-        btn.attributedTitle = string
+        btn.image = image
+        btn.imagePosition = .imageOnly
+        btn.title = ""
     }
 
     // MARK: - Panel setup
