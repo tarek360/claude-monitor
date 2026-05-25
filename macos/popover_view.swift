@@ -110,12 +110,16 @@ private struct UsageCard: View {
 
 private struct MenuItemRow: View {
     let title: String
+    var iconName: String? = nil
+    var systemIcon: String? = nil
     let action: () -> Void
     @State private var isHovered = false
 
     var body: some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: 8) {
+                icon
+                    .frame(width: 16, height: 16)
                 Text(title)
                     .font(.system(size: 13))
                 Spacer()
@@ -128,6 +132,20 @@ private struct MenuItemRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        if let iconName, let img = NSImage(named: iconName) {
+            Image(nsImage: img)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+        } else if let systemIcon {
+            Image(systemName: systemIcon)
+        } else {
+            Color.clear
+        }
     }
 }
 
@@ -170,8 +188,8 @@ struct PopoverView: View {
 
             // Controls
             VStack(spacing: 2) {
-                MenuItemRow(title: "View on GitHub", action: onGitHub)
-                MenuItemRow(title: "Quit",           action: onQuit)
+                MenuItemRow(title: "Report an Issue", iconName: "github", action: onGitHub)
+                MenuItemRow(title: "Quit", systemIcon: "power", action: onQuit)
             }
         }
         .padding(16)

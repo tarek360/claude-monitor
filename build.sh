@@ -17,6 +17,9 @@ cp macos/Info.plist "$APP/Contents/Info.plist"
 
 echo "→ Copying image assets..."
 cp assets/claudecode.png "$APP/Contents/Resources/claudecode.png"
+cp assets/claudecode.svg "$APP/Contents/Resources/claudecode.svg"
+cp assets/github.png "$APP/Contents/Resources/github.png"
+cp assets/github@2x.png "$APP/Contents/Resources/github@2x.png"
 
 echo "→ Generating app icon..."
 if bash scripts/build-icon.sh "$APP/Contents/Resources"; then

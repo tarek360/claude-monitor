@@ -63,22 +63,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return NSAttributedString(attachment: a)
         }
 
-        if let logo = NSImage(named: "claudecode") {
+        if let svgURL = Bundle.main.url(forResource: "claudecode", withExtension: "svg"),
+           let logo = NSImage(contentsOf: svgURL) {
             string.append(attach(logo, size: 14))
             string.append(NSAttributedString(string: " ", attributes: [.font: font]))
         }
 
         if hasData {
-            if let icon = NSImage(systemSymbolName: "timer", accessibilityDescription: nil) {
-                string.append(attach(icon, size: 11))
-            }
-            string.append(NSAttributedString(string: " \(Int(fivePct.rounded()))%  ·  ", attributes: [.font: font]))
-            if let icon = NSImage(systemSymbolName: "calendar", accessibilityDescription: nil) {
-                string.append(attach(icon, size: 11))
-            }
-            string.append(NSAttributedString(string: " \(Int(sevenPct.rounded()))%", attributes: [.font: font]))
+            string.append(NSAttributedString(string: "S \(Int(fivePct.rounded()))%  W \(Int(sevenPct.rounded()))%", attributes: [.font: font]))
         } else {
-            string.append(NSAttributedString(string: "—", attributes: [.font: font]))
+            string.append(NSAttributedString(string: "S --% W --%", attributes: [.font: font]))
         }
 
         btn.attributedTitle = string
@@ -176,8 +170,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func showControlMenu() {
         let menu = NSMenu()
 
-        let githubItem = NSMenuItem(title: "View on GitHub", action: #selector(openGitHub), keyEquivalent: "")
-        githubItem.image = menuIcon("arrow.up.right.square")
+        let githubItem = NSMenuItem(title: "Report an Issue", action: #selector(openGitHub), keyEquivalent: "")
+        githubItem.image = githubIcon()
         githubItem.target = self
         menu.addItem(githubItem)
 
@@ -199,6 +193,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func menuIcon(_ name: String) -> NSImage? {
         let img = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+        img?.isTemplate = true
+        return img
+    }
+
+    func githubIcon() -> NSImage? {
+        let img = NSImage(named: "github")
+        img?.size = NSSize(width: 16, height: 16)
         img?.isTemplate = true
         return img
     }
